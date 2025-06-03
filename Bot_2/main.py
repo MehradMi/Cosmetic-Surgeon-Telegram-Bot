@@ -15,7 +15,7 @@ from telegram.ext import (ApplicationBuilder, CommandHandler,
 
 # Telegram Bot Token
 load_dotenv()
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN_2")
 
 # States
 GENDER, PHOTO, CELEB_CHOICE, FIRSTNAME, LASTNAME, PHONE, CITY = range(7)
@@ -25,7 +25,7 @@ NOT_REGISTERED = "کاربر ربات را شروع کرده است، اما ه�
 REGISTERED = "کاربر ربات را شروع کرده و فرم ثبت‌نام را به طور کامل پر کرده است."
 
 # Bot's Identification Number (To discern data in the database)
-BOT_ID = 2
+BOT_ID = "@CosSur"
 
 def handle_data_and_database(context: ContextTypes.DEFAULT_TYPE, column, data, registration_status):
    context.user_data['bot_id'] = BOT_ID
