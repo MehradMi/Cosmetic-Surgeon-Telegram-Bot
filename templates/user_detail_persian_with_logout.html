@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جزئیات کاربر - ربات جراحی زیبایی</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/vazir-font/30.1.0/font-face.css" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Vazir', 'Tahoma', sans-serif;
+        }
+        
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .nav-link.active {
+            background: rgba(255,255,255,0.2) !important;
+            border-radius: 10px;
+        }
+        body {
+            background-color: #f8f9fc;
+        }
+        .profile-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border: none;
+            border-radius: 15px;
+        }
+        .info-item {
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            padding: 15px 0;
+        }
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        .surgery-suggestions {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 0 10px 10px 0;
+            font-family: 'Vazir', 'Tahoma', sans-serif;
+            white-space: pre-wrap;
+        }
+        .user-photo {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .photo-container {
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-user-md fa-3x text-white mb-2"></i>
+                        <h5 class="text-white">ربات جراحی</h5>
+                        <small class="text-white-50">پنل مدیریت</small>
+                    </div>
+                    
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{{ url_for('dashboard') }}">
+                                <i class="fas fa-tachometer-alt me-2"></i>
+                                داشبورد
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{{ url_for('users_list') }}">
+                                <i class="fas fa-users me-2"></i>
+                                کاربران
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{{ url_for('export_users') }}">
+                                <i class="fas fa-download me-2"></i>
+                                خروجی اطلاعات
+                            </a>
+                        </li>
+                        <li class="nav-item mt-auto">
+                            <a class="nav-link text-white" href="{{ url_for('logout') }}" 
+                               onclick="return confirm('آیا مطمئن هستید که می‌خواهید خارج شوید؟')">
+                                <i class="fas fa-sign-out-alt me-2"></i>
+                                خروج
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <div>
+                        <h1 class="h2">جزئیات کاربر</h1>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">داشبورد</a></li>
+                                <li class="breadcrumb-item"><a href="{{ url_for('users_list') }}">کاربران</a></li>
+                                <li class="breadcrumb-item active">کاربر #{{ user.telegram_id }}</li>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <a href="{{ url_for('users_list') }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-arrow-right"></i> بازگشت به کاربران
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <div class="row">
+                    <!-- User Profile Card -->
+                    <div class="col-lg-4 mb-4">
+                        <div class="card profile-card">
+                            <div class="card-body text-center">
+                                <div class="mb-4">
+                                    <i class="fas fa-user-circle fa-5x text-primary mb-3"></i>
+                                    <h4 class="card-title">{{ user.first_name }} {{ user.last_name }}</h4>
+                                    <p class="text-muted">شناسه کاربر: #{{ user.telegram_id }}</p>
+                                </div>
+                                
+                                <div class="text-start">
+                                    <div class="info-item">
+                                        <div class="row">
+                                            <div class="col-4">
+                                                <i class="fas fa-phone text-primary me-2"></i>
+                                                <strong>تلفن:</strong>
+                                            </div>
+                                            <div class="col-8">
+                                                {% if user.phone %}
+                                                    <a href="tel:{{ user.phone }}" class="text-decoration-none">
+                                                        {{ user.phone }}
+                                                    </a>
+                                                {% else %}
+                                                    <span class="text-muted">ارائه نشده</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="info-item">
+                                        <div class="row">
+                                            <div class="col-4">
+                                                <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                                                <strong>شهر:</strong>
+                                            </div>
+                                            <div class="col-8">
+                                                {% if user.city %}
+                                                    {{ user.city | title }}
+                                                {% else %}
+                                                    <span class="text-muted">ارائه نشده</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="info-item">
+                                        <div class="row">
+                                            <div class="col-4">
+                                                <i class="fas fa-star text-primary me-2"></i>
+                                                <strong>سلبریتی:</strong>
+                                            </div>
+                                            <div class="col-8">
+                                                {% if user.celeb_name %}
+                                                    <span class="badge bg-info fs-6">{{ user.celeb_name | title }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">انتخاب نشده</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+ 
+                                    <div class="info-item">
+                                        <div class="row">
+                                            <div class="col-4">
+                                                <i class="fas fa-circle text-primary me-2"></i>
+                                                <strong>جنسیت:</strong>
+                                            </div>
+                                            <div class="col-8">
+                                                {% if user.gender %}
+                                                    {{ user.gender | title }}
+                                                {% else %}
+                                                    <span class="text-muted">ارائه نشده</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="info-item">
+                                        <div class="row">
+                                            <div class="col-4">
+                                                <i class="fas fa-robot text-primary me-2"></i>
+                                                <strong>شناسه ربات:</strong>
+                                            </div>
+                                            <div class="col-8">
+                                                {% if user.bot_id %}
+                                                    {{ user.bot_id | title }}
+                                                {% else %}
+                                                    <span class="text-muted">ارائه نشده</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="info-item">
+                                        <div class="row">
+                                            <div class="col-4">
+                                                <i class="fas fa-square text-primary me-2"></i>
+                                                <strong>ثبت‌نام:</strong>
+                                            </div>
+                                            <div class="col-8">
+                                                {% if user.registration_status %}
+                                                    {{ user.registration_status | title }}
+                                                {% else %}
+                                                    <span class="text-muted">ارائه نشده</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Surgery Suggestions -->
+                    <div class="col-lg-8 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-user-md text-primary me-2"></i>
+                                    پیشنهادات جراحی
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                {% if user.surgery_suggestions %}
+                                    <div class="surgery-suggestions">{{ user.surgery_suggestions }}</div>
+                                {% else %}
+                                    <div class="text-center py-4">
+                                        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                                        <h6 class="text-muted">هیچ پیشنهاد جراحی در دسترس نیست.</h6>
+                                        <p class="text-muted">تجزیه و تحلیل هوش مصنوعی برای این کاربر هنوز تکمیل نشده است.</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Photo Section -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-camera text-primary me-2"></i>
+                                    عکس کاربر
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                {% if user.user_photo %}
+                                    <div class="photo-container">
+                                        <img src="{{ url_for('static', filename='pictures/' + user.user_photo) }}_{{user.bot_id}}.jpg" 
+                                             alt="عکس کاربر" 
+                                             class="user-photo"
+                                             onerror="this.style.display='none'; document.getElementById('photoError').style.display='block';">
+                                        
+                                        <div id="photoError" style="display:none;" class="alert alert-warning mt-3">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            <strong>عکس یافت نشد:</strong> {{ user.user_photo }}
+                                            <br>
+                                            <small class="text-muted">
+                                                فایل عکس ممکن است منتقل شده یا حذف شده باشد. 
+                                                لطفاً بررسی کنید که فایل در پوشه static/pictures/ موجود است.
+                                            </small>
+                                        </div>
+                                        
+                                        <div class="mt-3">
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                <strong>فایل:</strong> {{ user.user_photo }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-4">
+                                        <i class="fas fa-image fa-3x text-muted mb-3"></i>
+                                        <h6 class="text-muted">عکسی آپلود نشده</h6>
+                                        <p class="text-muted">کاربر هنوز عکسی آپلود نکرده است.</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">تأیید حذف</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>آیا مطمئن هستید که می‌خواهید <strong id="userName"></strong> را حذف کنید؟</p>
+                    <p class="text-muted">این عمل قابل بازگشت نیست و تمام اطلاعات کاربر به طور دائمی حذف خواهد شد.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                    <form id="deleteForm" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-danger">حذف کاربر</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function confirmDelete(userId, userName) {
+            document.getElementById('userName').textContent = userName;
+            document.getElementById('deleteForm').action = `/delete_user/${userId}`;
+            
+            const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            modal.show();
+        }
+    </script>
+</body>
+</html>

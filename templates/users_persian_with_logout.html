@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>کاربران - ربات جراحی زیبایی</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .nav-link.active {
+            background: rgba(255,255,255,0.2) !important;
+            border-radius: 10px;
+        }
+        .table-hover tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.1);
+        }
+        body {
+            background-color: #f8f9fc;
+        }
+        .filter-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border: none;
+            border-radius: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-user-md fa-3x text-white mb-2"></i>
+                        <h5 class="text-white">ربات جراحی</h5>
+                        <small class="text-white-50">پنل مدیریت</small>
+                    </div>
+                    
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{{ url_for('dashboard') }}">
+                                <i class="fas fa-tachometer-alt me-2"></i>
+                                داشبورد
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active text-white" href="{{ url_for('users_list') }}">
+                                <i class="fas fa-users me-2"></i>
+                                کاربران
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{{ url_for('export_users') }}">
+                                <i class="fas fa-download me-2"></i>
+                                دریافت داده‌ها
+                            </a>
+                        </li>
+                        <li class="nav-item mt-auto">
+                            <a class="nav-link text-white" href="{{ url_for('logout') }}" 
+                               onclick="return confirm('آیا مطمئن هستید که می‌خواهید خارج شوید؟')">
+                                <i class="fas fa-sign-out-alt me-2"></i>
+                                خروج
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">مدیریت کاربران</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <a href="{{ url_for('export_users') }}" class="btn btn-sm btn-success">
+                                <i class="fas fa-download"></i> دریافت CSV
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Filters -->
+                <div class="card filter-card mb-4">
+                    <div class="card-body">
+                        <form method="GET" action="{{ url_for('users_list') }}">
+                            <div class="row row-cols-auto g-3 align-items-end">
+                                <div class="col-md-3 mb-3"> 
+                                    <label for="search" class="form-label">جستجو</label>
+                                    <input type="text" class="form-control" id="search" name="search" value="{{ search }}"
+                                        placeholder="نام یا تلفن...">
+                                </div>
+                                <div class="col-md-2 mb-3"> 
+                                    <label for="city" class="form-label">شهر</label>
+                                    <select class="form-select" id="city" name="city">
+                                        <option value="">تمام شهرها</option>
+                                        {% for city in cities %}
+                                        <option value="{{ city.city }}" {% if filter_city==city.city %}selected{% endif %}>
+                                            {{ city.city }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-2 mb-3"> 
+                                    <label for="celeb" class="form-label">سلبریتی</label>
+                                    <select class="form-select" id="celeb" name="celeb">
+                                        <option value="">تمام سلبریتی‌ها</option>
+                                        {% for celeb in celebs %}
+                                        <option value="{{ celeb.celeb_name }}" {% if filter_celeb==celeb.celeb_name %}selected{% endif %}>
+                                            {{ celeb.celeb_name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-2 mb-3"> 
+                                    <label for="gender" class="form-label">جنسیت</label>
+                                    <select class="form-select" id="gender" name="gender">
+                                        <option value="">جنسیت</option>
+                                        {% for gender in genders %}
+                                        <option value="{{ gender.gender }}" {% if filter_city==gender.gender %}selected{% endif %}>
+                                            {{ gender.gender }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3 mb-3 d-flex align-items-end">
+                                    <div class="flex-grow-1 me-2"> 
+                                        <label for="phone" class="form-label">تلفن</label>
+                                        <select class="form-select" id="phone" name="phone">
+                                            <option value="">شماره تلفن</option>
+                                            {% for phone in phones %}
+                                            <option value="{{ phone.phone }}" {% if filter_phone==phone.phone %}selected{% endif %}>
+                                                {{ phone.phone }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary me-2">
+                                        <i class="fas fa-filter"></i> فیلتر </button>
+                                    <a href="{{ url_for('users_list') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Users Table -->
+                <div class="card shadow">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            تمام کاربران ({{ users|length }} یافت شد)
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {% if users %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>شناسه</th>
+                                        <th>نام</th>
+                                        <th>تلفن</th>
+                                        <th>شهر</th>
+                                        <th>سلبریتی</th>
+                                        <th>عملیات</th>
+                                        <th>شناسه ربات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in users %}
+                                    <tr>
+                                        <td><span class="badge bg-secondary">#{{ user.rowid }}</span></td>
+                                        <td>
+                                            <strong>{{ user.first_name }} {{ user.last_name }}</strong>
+                                        </td>
+                                        <td>
+                                            {% if user.phone %}
+                                                <a href="tel:{{ user.phone }}" class="text-decoration-none">
+                                                    {{ user.phone }}
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted">موجود نیست</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if user.city %}
+                                                <i class="fas fa-map-marker-alt text-muted me-1"></i>
+                                                {{ user.city }}
+                                            {% else %}
+                                                <span class="text-muted">موجود نیست</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if user.celeb_name %}
+                                                <span class="badge bg-info">{{ user.celeb_name }}</span>
+                                            {% else %}
+                                                <span class="text-muted">موجود نیست</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('user_detail', user_id=user.telegram_id) }}" 
+                                                   class="btn btn-info btn-sm" title="مشاهده جزئیات">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-danger btn-sm" 
+                                                        title="حذف کاربر"
+                                                        onclick="confirmDelete({{ user.rowid }}, '{{ user.first_name }} {{ user.last_name }}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if user.bot_id %}
+                                                <span class="badge bg-info">{{ user.bot_id }}</span>
+                                            {% else %}
+                                                <span class="text-muted">موجود نیست</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">هیچ کاربری یافت نشد</h5>
+                            {% if search or filter_city or filter_celeb %}
+                                <p class="text-muted">فیلترهای خود را تنظیم کنید</p>
+                                <a href="{{ url_for('users_list') }}" class="btn btn-primary">پاک کردن فیلترها</a>
+                            {% else %}
+                                <p class="text-muted">کاربران زمانی که با ربات شما تعامل کنند اینجا نمایش داده می‌شوند</p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">تایید حذف</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>آیا مطمئن هستید که می‌خواهید <strong id="userName"></strong> را حذف کنید؟</p>
+                    <p class="text-muted">این عمل قابل بازگشت نیست.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">لغو</button>
+                    <form id="deleteForm" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-danger">حذف کاربر</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function confirmDelete(userId, userName) {
+            document.getElementById('userName').textContent = userName;
+            document.getElementById('deleteForm').action = `/delete_user/${userId}`;
+            
+            const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            modal.show();
+        }
+    </script>
+</body>
+</html>
