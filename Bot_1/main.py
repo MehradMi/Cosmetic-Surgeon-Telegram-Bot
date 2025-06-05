@@ -8,11 +8,14 @@ import celebrities
 import openAI_module as cosmetic_surgent
 from database import init_db, save_user_to_db
 
-from telegram import (Update, ReplyKeyboardMarkup, 
+from telegram import (Update, ReplyKeyboardMarkup,
                       ReplyKeyboardRemove, KeyboardButton)
-from telegram.ext import (ApplicationBuilder, CommandHandler, 
-                          MessageHandler, filters, 
+from telegram.ext import (ApplicationBuilder, CommandHandler,
+                          MessageHandler, filters,
                           ConversationHandler, ContextTypes)
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+PICTURES_DIR = os.path.join(BASE_DIR, 'static', 'pictures')
 
 # Telegram Bot Token
 load_dotenv()
@@ -30,7 +33,7 @@ BOT_ID = '@CosmeticSurgent_NPhoto'
 
 def handle_data_and_database(context: ContextTypes.DEFAULT_TYPE, column, data, registration_status):
    context.user_data['bot_id'] = BOT_ID
-   context.user_data['registration_status'] = registration_status  
+   context.user_data['registration_status'] = registration_status
    context.user_data[column] = data
    save_user_to_db(context.user_data)
 
@@ -39,13 +42,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Add User To the users.db using their unique telegram_id
     telegram_id = update.effective_user.id
     handle_data_and_database(context, 'telegram_id', telegram_id, NOT_REGISTERED)
-    
+
     # Keyboard Buttons To Specify User's Gender
     keyboard = [
         [KeyboardButton("خانم")],
         [KeyboardButton("آقا")]
     ]
-    
+
     await update.message.reply_text("سلام! من ربات هوش مصنوعی جراحی زیبایی شما هستم. آماده‌ام کمکتان کنم شبیه سلبریتی مورد علاقه‌تان شوید! 🎯")
     await update.message.reply_text(
                                     "\n\nلطفاً جنسیت خود را برای ما مشخص کنید.",
@@ -61,7 +64,7 @@ async def handle_gender(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Remove The Keyboard Options
     await update.message.reply_text("لطفاً عکسی از خودتان برایمان ارسال کنید.🎯" \
-                                    "\n\nتوصیه می‌شود عکس ارسالی بدون آرایش غلیظ و عینک باشد و نور کافی داشته باشد.", 
+                                    "\n\nتوصیه می‌شود عکس ارسالی بدون آرایش غلیظ و عینک باشد و نور کافی داشته باشد.",
                                      reply_markup=ReplyKeyboardRemove())
     return PHOTO
 
@@ -70,13 +73,13 @@ async def handle_picture(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Handle Provided Photo
     file_id = update.message.photo[-1].file_id
     handle_data_and_database(context, 'user_photo', file_id, NOT_REGISTERED)
-     
+
     await update.message.reply_text("عکس شما دریافت شد، در حال پردازش هستم. لطفاً صبور باشید! ✅")
 
     #return CELEB_CHOICE
     user_file_id = context.user_data['user_photo']
     picture_file = await context.bot.get_file(user_file_id)
-    user_image_path = f"../static/pictures/{user_file_id}_{BOT_ID}.jpg"
+    user_image_path = f"{PICTURES_DIR}/{user_file_id}_{BOT_ID}.jpg"
     await picture_file.download_to_drive(user_image_path)
 
     # Translating gender to english for searchinng inside celebrities.celebrities dictionary
@@ -92,15 +95,15 @@ async def handle_picture(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if result is None or not isinstance(result, dict):
         await update.message.reply_text("متأسفم، مشکلی در حین پردازش عکس پیش آمد. لطفاً بعداً دوباره تلاش کنید.")
         return ConversationHandler.END
-    
+
     #print("DEBUG RESULT:", result)
     #context.user_data['celeb_name'] = result.get("celebrity_name", "Unknown")
-    #context.user_data['surgery_suggestions'] = result.get("suggestions", "No suggestions available.") 
+    #context.user_data['surgery_suggestions'] = result.get("suggestions", "No suggestions available.")
     celeb_name = result.get("celebrity_name", "Unknown")
     surgery_suggestions = result.get("suggestions", "No suggestions available.")
     handle_data_and_database(context, 'celeb_name', celeb_name, NOT_REGISTERED)
     handle_data_and_database(context, 'surgery_suggestions', surgery_suggestions, NOT_REGISTERED)
-    
+
 
     # Send the Matching Celeb Image Back:
     if result.get("celebrity_image"):
@@ -114,14 +117,14 @@ async def handle_picture(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f" این پیشنهاد من برای شبیه شدن به {context.user_data['celeb_name']}:\n\n{context.user_data['surgery_suggestions']}")
 
     await update.message.reply_text("خب، حالا بریم سراغ جزئیات شما. اسم کوچیکتون چیه؟")
-    
+
     return FIRSTNAME
 
 # --- Function To Get The User's First Name --- #
 async def get_firstname(update: Update, context: ContextTypes.DEFAULT_TYPE):
     first_name = update.message.text
     handle_data_and_database(context, 'first_name', first_name, NOT_REGISTERED)
-    
+
     await update.message.reply_text("فامیلیتون چیه؟")
     return LASTNAME
 
@@ -145,10 +148,10 @@ async def get_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def get_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     city = update.message.text
     handle_data_and_database(context, 'city', city, REGISTERED)
-    
+
     # Save to database
     #save_user_to_db(context.user_data)
-    
+
     await update.message.reply_text("ممنون! اطلاعات شما ذخیره شد. به زودی با شما تماس می‌گیریم. 😊")
 
     await update.message.reply_text("ربات متوقف شد." \
@@ -183,6 +186,3 @@ app.add_handler(conv_handler)
 
 init_db()
 app.run_polling()
-
-
-

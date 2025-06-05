@@ -7,11 +7,14 @@ import celebrities
 import openAI_module as cosmetic_surgent
 from database import init_db, save_user_to_db
 
-from telegram import (Update, ReplyKeyboardMarkup, 
+from telegram import (Update, ReplyKeyboardMarkup,
                       ReplyKeyboardRemove, KeyboardButton)
 from telegram.ext import (ApplicationBuilder, CommandHandler,
                           MessageHandler, filters,
                           ConversationHandler, ContextTypes)
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+PICTURES_DIR = os.path.join(BASE_DIR, 'static', 'pictures')
 
 # Telegram Bot Token
 load_dotenv()
@@ -29,7 +32,7 @@ BOT_ID = "@CosSur"
 
 def handle_data_and_database(context: ContextTypes.DEFAULT_TYPE, column, data, registration_status):
    context.user_data['bot_id'] = BOT_ID
-   context.user_data['registration_status'] = registration_status  
+   context.user_data['registration_status'] = registration_status
    context.user_data[column] = data
    save_user_to_db(context.user_data)
 
@@ -66,7 +69,7 @@ async def handle_gender(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Remove The Keyboard Options
     await update.message.reply_text("لطفاً عکسی از خودتان برایمان ارسال کنید.🎯" \
-                                    "\n\nتوصیه می‌شود عکس ارسالی بدون آرایش غلیظ و عینک باشد و نور کافی داشته باشد.", 
+                                    "\n\nتوصیه می‌شود عکس ارسالی بدون آرایش غلیظ و عینک باشد و نور کافی داشته باشد.",
                                      reply_markup=ReplyKeyboardRemove())
     return PHOTO
 
@@ -75,33 +78,33 @@ async def handle_picture(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("عکس شما دریافت شد، در حال پردازش هستم. لطفاً صبور باشید! ✅")
     file_id = update.message.photo[-1].file_id
     handle_data_and_database(context, 'user_photo', file_id, NOT_REGISTERED)
-    
+
     # Translating gender to english
     gender_english_format = translate_gender(context)
 
     keyboard = []
     if gender_english_format == "male":
         keyboard = [
-            [KeyboardButton("Brad Pitt")], 
-            [KeyboardButton("Christian Bale")], 
-            [KeyboardButton("Jake Gyllenhaal")], 
-            [KeyboardButton("Leonardo DiCaprio")], 
-            [KeyboardButton("Matthew McConaughey")], 
-            [KeyboardButton("Ryan Gosling")] 
+            [KeyboardButton("Brad Pitt")],
+            [KeyboardButton("Christian Bale")],
+            [KeyboardButton("Jake Gyllenhaal")],
+            [KeyboardButton("Leonardo DiCaprio")],
+            [KeyboardButton("Matthew McConaughey")],
+            [KeyboardButton("Ryan Gosling")]
         ]
     elif gender_english_format == "female":
         keyboard = [
-            [KeyboardButton("Ana DE Armas")], 
-            [KeyboardButton("Angelina Jolie")], 
-            [KeyboardButton("Emma Mackey")], 
-            [KeyboardButton("Emma Stone")], 
-            [KeyboardButton("Emma Watson")], 
-            [KeyboardButton("Margot Robbie")], 
-            [KeyboardButton("Natalie Portman")], 
-            [KeyboardButton("Scarlett Johansson")], 
-            [KeyboardButton("Taylor Swift")] 
+            [KeyboardButton("Ana DE Armas")],
+            [KeyboardButton("Angelina Jolie")],
+            [KeyboardButton("Emma Mackey")],
+            [KeyboardButton("Emma Stone")],
+            [KeyboardButton("Emma Watson")],
+            [KeyboardButton("Margot Robbie")],
+            [KeyboardButton("Natalie Portman")],
+            [KeyboardButton("Scarlett Johansson")],
+            [KeyboardButton("Taylor Swift")]
         ]
-        
+
     await update.message.reply_text(
         "عالیه! حالا یه سلبریتی رو انتخاب کن که دوست داری شبیه اون بشی:",
         reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
@@ -109,13 +112,13 @@ async def handle_picture(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     return CELEB_CHOICE
 
-# --- Handle Celebrity Choice --- #    
+# --- Handle Celebrity Choice --- #
 async def handle_celebrity_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     celeb_name = update.message.text
     handle_data_and_database(context, 'celeb_name', celeb_name, NOT_REGISTERED)
 
     await update.message.reply_text(f"متوجه شدم! شما می‌خواهید شبیه {celeb_name} شوید. در حال بررسی عکس‌ها هستم. لطفاً صبور باشید.")
- 
+
     celeb_image_path = ""
     gender_english_format = translate_gender(context)
     if gender_english_format == "male":
@@ -123,7 +126,7 @@ async def handle_celebrity_choice(update: Update, context: ContextTypes.DEFAULT_
             if celeb['name'] == celeb_name:
                 celeb_image_path = celeb['image_path']
                 break
-            
+
     elif gender_english_format == "female":
         for celeb in celebrities.celebrities["female"]:
             if celeb['name'] == celeb_name:
@@ -133,10 +136,10 @@ async def handle_celebrity_choice(update: Update, context: ContextTypes.DEFAULT_
     # Downloading User's Picture from Telegream
     user_file_id = context.user_data['user_photo']
     picture_file = await context.bot.get_file(user_file_id)
-    user_image_path = f"../static/pictures/{user_file_id}_{BOT_ID}.jpg"
+    user_image_path = f"{PICTURES_DIR}/{user_file_id}_{BOT_ID}.jpg"
     await picture_file.download_to_drive(user_image_path)
 
-    # Calling For AI Surgent 
+    # Calling For AI Surgent
     result = cosmetic_surgent.analyze_faces(user_image_path, celeb_image_path)
     #context.user_data['surgery_suggestions'] = result
     handle_data_and_database(context, 'surgery_suggestions', result, NOT_REGISTERED)
@@ -154,7 +157,7 @@ async def get_firstname(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Handle User's First Name
     first_name = update.message.text
     handle_data_and_database(context, 'first_name', first_name, NOT_REGISTERED)
-    
+
     # Ask for their Last Name
     await update.message.reply_text("فامیلیتون چیه؟")
     return LASTNAME
@@ -164,7 +167,7 @@ async def get_lastname(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Handle User's Last Name
     last_name = update.message.text
     handle_data_and_database(context, 'last_name', last_name, NOT_REGISTERED)
-    
+
     # Ask for their Phone Number
     await update.message.reply_text("لطفاً شماره تلفن خود را به ما بدهید:")
     return PHONE
@@ -174,7 +177,7 @@ async def get_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Handle User's Phone Number
     phone = update.message.text
     handle_data_and_database(context, 'phone', phone, NOT_REGISTERED)
-    
+
     # Ask where they live
     await update.message.reply_text("شهر محل اقامت شما کجاست؟")
     return CITY
@@ -184,7 +187,7 @@ async def get_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Handle User's City
     city = update.message.text
     handle_data_and_database(context, 'city', city, REGISTERED)
-     
+
     await update.message.reply_text("ممنون! اطلاعات شما ذخیره شد. به زودی با شما تماس می‌گیریم. 😊")
 
     await update.message.reply_text("ربات متوقف شد." \
