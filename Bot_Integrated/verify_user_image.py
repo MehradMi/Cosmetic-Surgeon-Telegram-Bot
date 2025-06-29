@@ -1,10 +1,11 @@
+import os
 import base64
 from openai import OpenAI
 from dotenv import load_dotenv
 
 # Load OpenAI API Key Here
 load_dotenv()
-OPENAI_API_KEY - os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # =========================
 
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -49,3 +50,7 @@ def verify_user_image(user_image_path):
            } 
         ],
     )
+    
+    # It must return either "OK" or "NOT OK"
+    # Any other output indicates error with the prompt not the code.
+    return response.output[0].content[0].text.strip()

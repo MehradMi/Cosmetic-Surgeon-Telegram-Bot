@@ -10,7 +10,8 @@ from database import init_db, save_user_to_db
 
 from telegram import (Update, ReplyKeyboardMarkup,
                       ReplyKeyboardRemove, KeyboardButton)
-from telegram.ext import (ApplicationBuilder, CommandHandler,
+from telegram.ext import (Application,
+                          ApplicationBuilder, CommandHandler,
                           MessageHandler, filters,
                           ConversationHandler, ContextTypes)
 
