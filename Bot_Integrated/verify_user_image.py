@@ -6,15 +6,18 @@ from dotenv import load_dotenv
 # Load OpenAI API Key Here
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-# =========================
+# ===============================  
 
+# Intialize OpenAI Client
 client = OpenAI(api_key=OPENAI_API_KEY)
+# ===============================
 
-# Function For Encoding The User's Image
+# --- Function: Encoding User's Image --- #
 def encode_image(image_path):
     with open(image_path, "rb") as image:
         return base64.b64encode(image.read()).decode()
 
+# --- Function: Verify User's Image Integrity --- #
 def verify_user_image(user_image_path):
     response = client.responses.create(
         model="gpt-4.1",
@@ -54,3 +57,5 @@ def verify_user_image(user_image_path):
     # It must return either "OK" or "NOT OK"
     # Any other output indicates error with the prompt not the code.
     return response.output[0].content[0].text.strip()
+
+# ===============================
