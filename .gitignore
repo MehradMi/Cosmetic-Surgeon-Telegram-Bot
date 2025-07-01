@@ -1,5 +1,7 @@
 venv/
 static/pictures/
+static/comparison_pictures
+static/target_person_pictures
 *.db
 .env
 */__pycache__/
