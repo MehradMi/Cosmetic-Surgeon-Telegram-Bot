@@ -40,7 +40,7 @@ def find_similar_celebrities(user_image_path, user_gender):
                                     For each celebrity:
                                     - Provide the **Iranian/Persian** celebrity names in **Persian**
                                     - Provide the **foreign (non-Iranian)** celebrity names in **English**
-                                    - Provide exactly **3 reasons** in **Persian** that explain why the user resembles them along with an estimate percentage of similarity
+                                    - Provide exactly **3 reasons** for all celebrities in **Persian** (even for the **foreign (non_Iranian)** celebrities) that explain why the user resembles them along with an estimate percentage of similarity
                                     - The reasons should focus on facial structure, symmetry, features like eyes, jawline, lips, etc.
                                     - The reasons must be realistic, well-written, and based on visual traits
 
@@ -91,11 +91,11 @@ def find_similar_celebrities(user_image_path, user_gender):
         
     try:
         found_celebrities = json.loads(found_celebrities)
-        print(type(found_celebrities))
-        print(found_celebrities)
+        #print(type(found_celebrities))
+        #print(found_celebrities)
     except json.JSONDecodeError as e:
-        print("🚫 JSON parsing error:", e)
-        print("🔎 Raw input:", found_celebrities)
+        #print("🚫 JSON parsing error:", e)
+        #print("🔎 Raw input:", found_celebrities)
         return "NOT FOUND"
     
         

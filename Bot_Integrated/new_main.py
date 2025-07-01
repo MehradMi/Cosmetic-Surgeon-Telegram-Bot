@@ -1,9 +1,9 @@
 # Import Needed Modules 
 import re
 import json
-import asyncio
 import sys, os
 import requests
+import asyncio  # Added for typing indicator
 from PIL import Image
 from io import BytesIO
 from dotenv import load_dotenv
@@ -60,6 +60,16 @@ COMPARISON_PICTURES_DIR = os.path.join(BASE_DIR, 'static', 'comparison_pictures'
 ASSETS_DIR = os.path.join(BASE_DIR, 'assets')
 # ================================
 
+# Helper function to keep typing indicator active
+async def keep_typing(context: ContextTypes.DEFAULT_TYPE, chat_id: int, stop_event: asyncio.Event):
+    """Keep sending typing indicator every 4 seconds until stop_event is set"""
+    while not stop_event.is_set():
+        try:
+            await context.bot.send_chat_action(chat_id=chat_id, action="typing")
+            await asyncio.sleep(4)  # Send every 4 seconds (before 5-second timeout)
+        except Exception:
+            break
+
 # --- Function: Handles and Stores Data --- #
 def handle_data_and_database(context: ContextTypes.DEFAULT_TYPE,
                              column, data, registration_status):
@@ -72,17 +82,6 @@ def handle_data_and_database(context: ContextTypes.DEFAULT_TYPE,
 # --- Function: Replace White Spaces With Underscores
 def sanitize_filename(name):
     return re.sub(r'\W+', '_', name)
-# ===============================
-
-# --- Function: Helper function to keep typing indicator active --- #
-async def keep_typing(context: ContextTypes.DEFAULT_TYPE, chat_id: int, stop_event: asyncio.Event):
-    """Keep sending typing indicator every 4 seconds until stop_event is set"""
-    while not stop_event.is_set():
-        try:
-            await context.bot.send_chat_action(chat_id=chat_id, action="typing")
-            await asyncio.sleep(4)  # Send every 4 seconds (before 5-second timeout)
-        except Exception:
-            break
 # ===============================
 
 # --- Bot Functions: Start Handler --- #
@@ -199,83 +198,126 @@ async def handle_picture(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global BAD_IMAGE_ERROR_COUNT
     if BAD_IMAGE_ERROR_COUNT == 0:
         await update.message.reply_text("به به چه عکس قشنگی! یکم بهم فرصت بده تا چهره تو درست آنالیز کنم!")
-    # ----------------------------
     
-    # Stage 2: Download User Picture
-    file_id = update.message.photo[-1].file_id
-    user_image_path = f"{PICTURES_DIR}/{file_id}_{TELEGRAM_BOT_ID}.jpg"
-    picture_file = await context.bot.get_file(file_id)
-    await picture_file.download_to_drive(user_image_path)
-    # ----------------------------
+    # Create stop event for typing indicator
+    stop_typing = asyncio.Event()
+    typing_task = asyncio.create_task(keep_typing(context, update.effective_chat.id, stop_typing))
+    
+    try:
+        # Stage 2: Download User Picture
+        file_id = update.message.photo[-1].file_id
+        user_image_path = f"{PICTURES_DIR}/{file_id}_{TELEGRAM_BOT_ID}.jpg"
+        picture_file = await context.bot.get_file(file_id)
+        await picture_file.download_to_drive(user_image_path)
+        # ----------------------------
 
-    # Stage 3: Call verify_user_image function (OpenAI Module)
-    verification = verify_user_image(user_image_path)
-    # ----------------------------
-   
-    # Stage 4: Either Add To The BAD_IMAGE_ERROR_COUNT And Call The 'picture_error' Function
-    #          Or Call The 'handle_data_and_database' Function And Insert The User's Picture "file_id" Into The 'user_photo' Column In The Database. 
-    if BAD_IMAGE_ERROR_COUNT == 0 and verification != "OK":
-        BAD_IMAGE_ERROR_COUNT += 1
-        return await picture_error(update, context, user_image_path)
-    else:
-        handle_data_and_database(context, 'user_photo', file_id, NOT_REGISTERED)
-        return await find_similar_celebs(update, context)
+        # Stage 3: Call verify_user_image function (OpenAI Module)
+        #verification = verify_user_image(user_image_path)
+        # Stage 3: Call verify_user_image function (OpenAI Module)
+        verification = await asyncio.to_thread(verify_user_image, user_image_path)
+        # ----------------------------
+       
+        # Stage 4: Either Add To The BAD_IMAGE_ERROR_COUNT And Call The 'picture_error' Function
+        #          Or Call The 'handle_data_and_database' Function And Insert The User's Picture "file_id" Into The 'user_photo' Column In The Database. 
+        if BAD_IMAGE_ERROR_COUNT == 0 and verification != "OK":
+            BAD_IMAGE_ERROR_COUNT += 1
+            return await picture_error(update, context, user_image_path)
+        else:
+            handle_data_and_database(context, 'user_photo', file_id, NOT_REGISTERED)
+            return await find_similar_celebs(update, context)
+            
+    finally:
+        # Stop typing indicator
+        stop_typing.set()
+        typing_task.cancel()
+        try:
+            await typing_task
+        except asyncio.CancelledError:
+            pass
     # ----------------------------
     
 # --- Bot Function: Finds Similar Looking Celebrities --- #
 async def find_similar_celebs(update: Update, context: ContextTypes.DEFAULT_TYPE):
-   file_id = context.user_data['user_photo'] 
-   user_image_path = f"{PICTURES_DIR}/{file_id}_{TELEGRAM_BOT_ID}.jpg" 
-   user_gender_en = None
-   if context.user_data['gender'] == "آقا":
-       user_gender_en = "Male"
-   else:
-       user_gender_en = "Female"
+    # Create stop event for typing indicator
+    stop_typing = asyncio.Event()
+    typing_task = asyncio.create_task(keep_typing(context, update.effective_chat.id, stop_typing))
+    
+    try:
+        file_id = context.user_data['user_photo'] 
+        user_image_path = f"{PICTURES_DIR}/{file_id}_{TELEGRAM_BOT_ID}.jpg" 
+        user_gender_en = None
+        if context.user_data['gender'] == "آقا":
+            user_gender_en = "Male"
+        else:
+            user_gender_en = "Female"
 
-   # Call find_similar_celebrities function (OpenAI Module) 
-   similar_celebrities = find_similar_celebrities(user_image_path, user_gender_en)
-   # ----------------------------
-   global NOT_FOUND_CELEBRITY_ERROR_COUNT  
-   if NOT_FOUND_CELEBRITY_ERROR_COUNT == 4:
-       await update.message.reply_text("متاسفم بعد از بیشتر از پنج بار تلاش هنوز نتونستم سلبریتی های مناسبی رو برات پیدا کنم. لطفا ربات رو دوباره آغاز کن و یه عکس بهتر برام بفرست عزیزم.")
-       return await stop(update, context)
-   elif similar_celebrities == "NOT FOUND" and NOT_FOUND_CELEBRITY_ERROR_COUNT < 5:
-       await update.message.reply_text("متاسفم نتونستم سلبریتی های مناسبی پیدا کنم. الان دوباره تلاش میکنم لطفا یکم دیگه صبر کن!")
-       NOT_FOUND_CELEBRITY_ERROR_COUNT += 1
-       return await find_similar_celebs(update, context) 
-   
-   handle_data_and_database(context, 'similar_celebrities', f"{similar_celebrities}".replace("\\u200c", " "), NOT_REGISTERED)
-   
-   #await update.message.reply_text(
-       #json.dumps(similar_celebrities, ensure_ascii=False)
-       #) 
-   
-   return await search_celebrity_image(update, context, similar_celebrities)
+        # Call find_similar_celebrities function (OpenAI Module) 
+        similar_celebrities = find_similar_celebrities(user_image_path, user_gender_en)
+        # ----------------------------
+        global NOT_FOUND_CELEBRITY_ERROR_COUNT  
+        if NOT_FOUND_CELEBRITY_ERROR_COUNT == 4:
+            await update.message.reply_text("متاسفم بعد از بیشتر از پنج بار تلاش هنوز نتونستم سلبریتی های مناسبی رو برات پیدا کنم. لطفا ربات رو دوباره آغاز کن و یه عکس بهتر برام بفرست عزیزم.")
+            return await stop(update, context)
+        elif similar_celebrities == "NOT FOUND" and NOT_FOUND_CELEBRITY_ERROR_COUNT < 5:
+            await update.message.reply_text("متاسفم نتونستم سلبریتی های مناسبی پیدا کنم. الان دوباره تلاش میکنم لطفا یکم دیگه صبر کن!")
+            NOT_FOUND_CELEBRITY_ERROR_COUNT += 1
+            return await find_similar_celebs(update, context) 
+        
+        handle_data_and_database(context, 'similar_celebrities', f"{similar_celebrities}".replace("\\u200c", " "), NOT_REGISTERED)
+        
+        #await update.message.reply_text(
+           #json.dumps(similar_celebrities, ensure_ascii=False)
+           #) 
+        
+        return await search_celebrity_image(update, context, similar_celebrities)
+        
+    finally:
+        # Stop typing indicator
+        stop_typing.set()
+        typing_task.cancel()
+        try:
+            await typing_task
+        except asyncio.CancelledError:
+            pass
 # ================================
        
 # --- Bot Function: Search For Celebrity Image --- #
 async def search_celebrity_image(update: Update, context: ContextTypes.DEFAULT_TYPE, similar_celebrities):
-    user_photo_file_id = context.user_data['user_photo']
-    user_image_path = f"{PICTURES_DIR}/{user_photo_file_id}_{TELEGRAM_BOT_ID}.jpg" 
-
-    celebrity_image_url_dict = {}
-    for celebrity in similar_celebrities:
-        try:
-            lang="en"
-            if is_persian_name(celebrity["name"]):
-                lang="fa"
-                
-            celebrity_image_url = get_celebrity_image_url(celebrity["name"], lang)
-            #caption_reasons = celebrity["reasons"]
-            caption_reasons = "\n".join(f"• {reason}" for reason in celebrity["reasons"])
-            celebrity_image_url_dict[celebrity["name"]] = celebrity_image_url
-            await send_images_side_by_side(update, context, user_image_path, celebrity_image_url, 
-                                           user_photo_file_id, celebrity["name"],caption_reasons)
-        except Exception as e:
-            pass
+    # Create stop event for typing indicator
+    stop_typing = asyncio.Event()
+    typing_task = asyncio.create_task(keep_typing(context, update.effective_chat.id, stop_typing))
     
-    context.user_data['celebrity_image_urls'] = celebrity_image_url_dict
-    return await select_person_to_look_like(update, context, similar_celebrities)
+    try:
+        user_photo_file_id = context.user_data['user_photo']
+        user_image_path = f"{PICTURES_DIR}/{user_photo_file_id}_{TELEGRAM_BOT_ID}.jpg" 
+
+        celebrity_image_url_dict = {}
+        for celebrity in similar_celebrities:
+            try:
+                lang="en"
+                if is_persian_name(celebrity["name"]):
+                    lang="fa"
+                    
+                celebrity_image_url = get_celebrity_image_url(celebrity["name"], lang)
+                #caption_reasons = celebrity["reasons"]
+                caption_reasons = "\n".join(f"• {reason}" for reason in celebrity["reasons"])
+                celebrity_image_url_dict[celebrity["name"]] = celebrity_image_url
+                await send_images_side_by_side(update, context, user_image_path, celebrity_image_url, 
+                                               user_photo_file_id, celebrity["name"],caption_reasons)
+            except Exception as e:
+                pass
+        
+        context.user_data['celebrity_image_urls'] = celebrity_image_url_dict
+        return await select_person_to_look_like(update, context, similar_celebrities)
+        
+    finally:
+        # Stop typing indicator
+        stop_typing.set()
+        typing_task.cancel()
+        try:
+            await typing_task
+        except asyncio.CancelledError:
+            pass
 # ================================
 
 # --- Bot Function: Send Back User & Celebrity Images --- #
@@ -404,6 +446,7 @@ async def handle_wish_to_continue(update: Update, context: ContextTypes.DEFAULT_
         [KeyboardButton("خیر")]
     ]
     if update.message.text == "خیر":
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
         await update.message.reply_text("میخوای برات یه وقت مشاوره رایگان برای نغییرات زیبایی بگیرم؟",
                                         reply_markup=ReplyKeyboardMarkup(keyboard,
                                                                          one_time_keyboard=True,
@@ -411,6 +454,7 @@ async def handle_wish_to_continue(update: Update, context: ContextTypes.DEFAULT_
         return HANDLE_LAST_YES_OR_NO
     elif update.message.text == "بله":
         # If "Yes": Take user information
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
         await update.message.reply_text("عالی! برای رزرو وقت مشاوره، لطفا اطلاعاتت رو کامل کن.\nاسمت چیه؟",
                                         reply_markup=ReplyKeyboardRemove())
         return HANDLE_FIRSTNAME
@@ -427,6 +471,7 @@ async def handle_last_yes_or_no(update: Update, context: ContextTypes.DEFAULT_TY
         # ----------------------------
     elif update.message.text == "بله":
         # If "Yes": Take user information
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
         await update.message.reply_text("عالی! برای رزرو وقت مشاوره، لطفا اطلاعاتت رو کامل کن.\nاسمت چیه؟",
                                         reply_markup=ReplyKeyboardRemove())
         return HANDLE_FIRSTNAME
@@ -443,6 +488,7 @@ async def handle_firstname(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # ----------------------------
     
     # Stage 2: Ask For User Lastname
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     await update.message.reply_text("فامیلت چیه؟")
     # ----------------------------
     
@@ -461,23 +507,11 @@ async def handle_lastname(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # ----------------------------
     
     # Stage 2: Ask For User Phone Number
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     await update.message.reply_text("شماره تماست چیه؟\n شماره تماس به صورت: ۰۹*******۹۷ باید باشد.")
     # ----------------------------
 
     # Stage 3: Ask ConversationHandler To Move Bot To The HANLDE_PHONE State
-    return HANDLE_PHONE
-    # ----------------------------
-
-# ================================
-
-# --- Bot Function: Take User Information - Phone Number Error --- # 
-async def phone_error(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    # Stage 1: Ask For User Phone Number Again!!! : Enter The Phone Number Correctly You Dumb Ass!! 
-    await update.message.reply_text("عزیزم توجه کن شماره تماست باید به مثل ۰۹*******۹۷ باشه.\n حالا دوباره بهم بگو شماره تماست چند بود؟")
-    # ----------------------------
-    
-    # Stage 2: Ask ConversationHandler To Move Bot To The HANLDE_PHONE State
     return HANDLE_PHONE
     # ----------------------------
 
@@ -495,6 +529,7 @@ async def handle_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Stage 2: Check If The Phone Number Is Valid
     if not re.match(iranian_phone_patteren, phone): 
         # Stage 3: Ask For User Phone Number Again!!! : Enter The Phone Number Correctly You Dumb Ass!! 
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
         await update.message.reply_text("عزیزم توجه کن شماره تماست باید به مثل ۰۹*******۹۷ باشه.\n حالا دوباره بهم بگو شماره تماست چند بود؟")
         # ----------------------------
         # Stage 4: Ask ConversationHandler To Move Bot To The HANLDE_PHONE State (Stay Here Until User Enters A Valid Phone Number)
@@ -509,6 +544,8 @@ async def handle_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [KeyboardButton("رد کردن")]
     ]
+    
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     await update.message.reply_text("خب. کدوم شهر سکونت داری؟ )اختیاری: گزینه <رد کردن> رو انتخاب کن)",
                                     reply_markup=ReplyKeyboardMarkup(keyboard,
                                                                      one_time_keyboard=True,
@@ -539,6 +576,7 @@ async def handle_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # --- Bot Function: Surgery Suggestions Handler --- #
 async def give_surgery_suggestions(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     await update.message.reply_text("خب یکم بهم فرصت بده تا بهت بگم چطوری میتونی به فرد انتخابیت شبیه تر بشی",
                                     reply_markup=ReplyKeyboardRemove())
     
@@ -551,12 +589,14 @@ async def give_surgery_suggestions(update: Update, context: ContextTypes.DEFAULT
     celeb_name = context.user_data['celeb_name']
     if celeb_name != "":
         celebrity_image_url = context.user_data['celebrity_image_urls'].get(celeb_name)
-        suggestions = surgery_suggestions(user_image_path, celebrity_image_url)
+        #suggestions = surgery_suggestions(user_image_path, celebrity_image_url)
+        suggestions = await asyncio.to_thread(surgery_suggestions, user_image_path, celebrity_image_url)
         await send_images_side_by_side(update, context, user_image_path, celebrity_image_url, user_photo_file_id, celeb_name, caption)
     else:
         target_photo_file_id = context.user_data['user_target_photo']
         user_target_image_path = f"{TARGET_PERSON_PICTURES_DIR}/{target_photo_file_id}_{TELEGRAM_BOT_ID}.jpg" 
-        suggestions = surgery_suggestions(user_image_path, user_target_image_path)
+        #suggestions = surgery_suggestions(user_image_path, user_target_image_path)
+        suggestions = await asyncio.to_thread(surgery_suggestions, user_image_path, celebrity_image_url)
         await send_images_side_by_side(update, context, user_image_path, user_target_image_path, user_photo_file_id,target_photo_file_id, caption)
     # ----------------------------    
     
@@ -573,12 +613,14 @@ async def give_surgery_suggestions(update: Update, context: ContextTypes.DEFAULT
 
 # --- Bot Function: Share This Bot Please Handler --- #
 async def share_this_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     await update.message.reply_text("این هوش مصنوعی رو برای دوستات بفرست و به چالش شبیه کدوم سلبریتی هستی دعوتشون کن.")
     return await stop(update, context)
 # ================================
 
 # --- Bot Function: Stop The Bot From Progressing Any Furthur --- #
 async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     await update.message.reply_text("ربات متوقف شد." \
     "\nلطفاً برای شروع مجدد ربات، روی دکمه «start» از منو کلیک کنید.")
 

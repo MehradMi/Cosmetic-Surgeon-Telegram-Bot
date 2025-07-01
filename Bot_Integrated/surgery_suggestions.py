@@ -38,8 +38,8 @@ def surgery_suggestions(user_image_path, celebrity_image_url_or_path):
                        "text": """
                                     You are a highly experienced and world-renowned facial aesthetics and cosmetic surgery expert.
                                     You will be given two face images:
-                                    - Image A: the user's face
-                                    - Image B: the face of a celebrity the user wants to resemble
+                                    - First image : the user's face
+                                    - Second image B: the face of a celebrity the user wants to resemble
 
                                     Your task:
                                     - Carefully analyze and compare the facial features in both images, including:
@@ -65,8 +65,8 @@ def surgery_suggestions(user_image_path, celebrity_image_url_or_path):
                                     - Do not include any other information, disclaimers, or markdown formatting — just the full, clean explanation
 
                                     Images:
-                                    - Image A is the user’s face
-                                    - Image B is the celebrity’s face they want to resemble
+                                    - First image  is the user’s face
+                                    - Second image is the celebrity’s face they want to resemble
                        """
                    },
                    {
@@ -81,7 +81,7 @@ def surgery_suggestions(user_image_path, celebrity_image_url_or_path):
            } 
        ]
    ) 
-   print(response.output[0].content[0].text.strip())
+   #print(response.output[0].content[0].text.strip())
    return response.output[0].content[0].text.strip() 
 
 # ===============================
