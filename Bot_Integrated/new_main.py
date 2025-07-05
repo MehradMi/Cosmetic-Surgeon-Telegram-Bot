@@ -60,6 +60,13 @@ COMPARISON_PICTURES_DIR = os.path.join(BASE_DIR, 'static', 'comparison_pictures'
 ASSETS_DIR = os.path.join(BASE_DIR, 'assets')
 # ================================
 
+# Check If The Directories Don't Exist Create Them
+os.makedirs(PICTURES_DIR, exist_ok=True)
+os.makedirs(TARGET_PERSON_PICTURES_DIR, exist_ok=True)
+os.makedirs(COMPARISON_PICTURES_DIR, exist_ok=True)
+os.makedirs(ASSETS_DIR, exist_ok=True)
+# ================================
+
 # Helper function to keep typing indicator active
 async def keep_typing(context: ContextTypes.DEFAULT_TYPE, chat_id: int, stop_event: asyncio.Event):
     """Keep sending typing indicator every 4 seconds until stop_event is set"""
@@ -89,6 +96,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Stage 1: Take user telegram id and insert it into the database
     user_telegram_id = update.message.from_user.id
     handle_data_and_database(context, 'telegram_id', user_telegram_id, NOT_REGISTERED)
+
+    username = update.effective_user.username or "مخاطب ID Telegram ندارد."
+    handle_data_and_database(context, 'username', username, NOT_REGISTERED)
     # ----------------------------
     
     # Stage 2: Call the function responsible for greeting the user
@@ -596,7 +606,7 @@ async def give_surgery_suggestions(update: Update, context: ContextTypes.DEFAULT
         target_photo_file_id = context.user_data['user_target_photo']
         user_target_image_path = f"{TARGET_PERSON_PICTURES_DIR}/{target_photo_file_id}_{TELEGRAM_BOT_ID}.jpg" 
         #suggestions = surgery_suggestions(user_image_path, user_target_image_path)
-        suggestions = await asyncio.to_thread(surgery_suggestions, user_image_path, celebrity_image_url)
+        suggestions = await asyncio.to_thread(surgery_suggestions, user_image_path, user_target_image_path)
         await send_images_side_by_side(update, context, user_image_path, user_target_image_path, user_photo_file_id,target_photo_file_id, caption)
     # ----------------------------    
     

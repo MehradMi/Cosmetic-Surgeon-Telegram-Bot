@@ -10,6 +10,7 @@ def init_db():
     cur.execute(""" 
                 CREATE TABLE IF NOT EXISTS users (
                     telegram_id INTEGER,
+                    username TEXT,
                     bot_id TEXT,
                     registration_status TEXT,
                     gender TEXT,
@@ -22,7 +23,7 @@ def init_db():
                     similar_celebrities TEXT,
                     celeb_name TEXT,
                     surgery_suggestions TEXT,
-                    UNIQUE (telegram_id)
+                    UNIQUE (telegram_id, username)
                 )
                 """)
     
@@ -33,8 +34,8 @@ def save_user_to_db(user_data):
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     cur = conn.cursor()
     cur.execute("""
-                INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT (telegram_id) DO UPDATE SET
+                INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT (telegram_id, username) DO UPDATE SET
                 registration_status = excluded.registration_status,
                 gender = excluded.gender,
                 first_name = excluded.first_name,
@@ -48,6 +49,7 @@ def save_user_to_db(user_data):
                 surgery_suggestions = excluded.surgery_suggestions 
                 """, (            
                         user_data.get('telegram_id'),
+                        user_data.get('username'),
                         user_data.get('bot_id'),
                         user_data.get('registration_status'),
                         user_data.get('gender'),
