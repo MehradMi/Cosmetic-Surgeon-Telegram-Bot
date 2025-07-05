@@ -23,7 +23,7 @@ def init_db():
                     similar_celebrities TEXT,
                     celeb_name TEXT,
                     surgery_suggestions TEXT,
-                    UNIQUE (telegram_id, username)
+                    UNIQUE (telegram_id)
                 )
                 """)
     
@@ -35,7 +35,8 @@ def save_user_to_db(user_data):
     cur = conn.cursor()
     cur.execute("""
                 INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT (telegram_id, username) DO UPDATE SET
+                ON CONFLICT (telegram_id) DO UPDATE SET
+                username = excluded.username,
                 registration_status = excluded.registration_status,
                 gender = excluded.gender,
                 first_name = excluded.first_name,

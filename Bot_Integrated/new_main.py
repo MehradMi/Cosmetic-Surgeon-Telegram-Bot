@@ -465,8 +465,9 @@ async def handle_wish_to_continue(update: Update, context: ContextTypes.DEFAULT_
     elif update.message.text == "بله":
         # If "Yes": Take user information
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
-        await update.message.reply_text("عالی! برای رزرو وقت مشاوره، لطفا اطلاعاتت رو کامل کن.\nاسمت چیه؟",
+        await update.message.reply_text("عالی! برای رزرو وقت مشاوره، لطفا اطلاعاتت رو کامل کن.",
                                         reply_markup=ReplyKeyboardRemove())
+        await update.message.reply_text("اسمت چیه?")
         return HANDLE_FIRSTNAME
         # ----------------------------
 
@@ -482,8 +483,10 @@ async def handle_last_yes_or_no(update: Update, context: ContextTypes.DEFAULT_TY
     elif update.message.text == "بله":
         # If "Yes": Take user information
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
-        await update.message.reply_text("عالی! برای رزرو وقت مشاوره، لطفا اطلاعاتت رو کامل کن.\nاسمت چیه؟",
+        await update.message.reply_text("عالی! برای رزرو وقت مشاوره، لطفا اطلاعاتت رو کامل کن.",
                                         reply_markup=ReplyKeyboardRemove())
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
+        await update.message.reply_text("اسمت چیه?")
         return HANDLE_FIRSTNAME
         # ----------------------------
 
@@ -518,7 +521,7 @@ async def handle_lastname(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Stage 2: Ask For User Phone Number
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
-    await update.message.reply_text("شماره تماست چیه؟\n شماره تماس به صورت: ۰۹*******۹۷ باید باشد.")
+    await update.message.reply_text("شماره تماست چیه؟\n شماره تماس به صورت: 09*******97 باید باشد.")
     # ----------------------------
 
     # Stage 3: Ask ConversationHandler To Move Bot To The HANLDE_PHONE State
@@ -540,7 +543,7 @@ async def handle_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not re.match(iranian_phone_patteren, phone): 
         # Stage 3: Ask For User Phone Number Again!!! : Enter The Phone Number Correctly You Dumb Ass!! 
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
-        await update.message.reply_text("عزیزم توجه کن شماره تماست باید به مثل ۰۹*******۹۷ باشه.\n حالا دوباره بهم بگو شماره تماست چند بود؟")
+        await update.message.reply_text("عزیزم توجه کن شماره تماست باید مثل 09*******97 باشه.\n حالا دوباره بهم بگو شماره تماست چند بود؟")
         # ----------------------------
         # Stage 4: Ask ConversationHandler To Move Bot To The HANLDE_PHONE State (Stay Here Until User Enters A Valid Phone Number)
         return HANDLE_PHONE
@@ -556,7 +559,7 @@ async def handle_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
     
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
-    await update.message.reply_text("خب. کدوم شهر سکونت داری؟ )اختیاری: گزینه <رد کردن> رو انتخاب کن)",
+    await update.message.reply_text("(خب. کدوم شهر سکونت داری؟ )اختیاری: گزینه <رد کردن> رو انتخاب کن",
                                     reply_markup=ReplyKeyboardMarkup(keyboard,
                                                                      one_time_keyboard=True,
                                                                      resize_keyboard=True))
@@ -615,7 +618,7 @@ async def give_surgery_suggestions(update: Update, context: ContextTypes.DEFAULT
     # ----------------------------    
     
     # Save suggestions to database
-    handle_data_and_database(context, 'surgery_suggestions', suggestions, NOT_REGISTERED)
+    handle_data_and_database(context, 'surgery_suggestions', suggestions, REGISTERED)
     # ----------------------------
   
     return await share_this_bot(update, context)

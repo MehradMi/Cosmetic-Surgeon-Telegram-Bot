@@ -246,7 +246,7 @@ def users_list():
 def user_detail(user_id, bot_id):
     try:
         conn = get_db_connection()
-        user = conn.execute('SELECT telegram_id, * FROM users WHERE telegram_id = ? AND bot_id = ?', (user_id, bot_id)).fetchone()
+        user = conn.execute('SELECT username, * FROM users WHERE telegram_id = ? AND bot_id = ?', (user_id, bot_id)).fetchone()
         conn.close()
          
         if user is None:
