@@ -457,10 +457,10 @@ async def handle_wish_to_continue(update: Update, context: ContextTypes.DEFAULT_
     ]
     if update.message.text == "خیر":
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
-        await update.message.reply_text("میخوای برات یه وقت مشاوره رایگان برای نغییرات زیبایی بگیرم؟",
-                                        reply_markup=ReplyKeyboardMarkup(keyboard,
-                                                                         one_time_keyboard=True,
-                                                                         resize_keyboard=True))
+        await update.message.reply_text("میخوای برات یه وقت مشاوره رایگان برای تغییرات زیبایی بگیرم؟",
+                                reply_markup=ReplyKeyboardMarkup(keyboard,
+                                                                 one_time_keyboard=True,
+                                                                 resize_keyboard=True))
         return HANDLE_LAST_YES_OR_NO
     elif update.message.text == "بله":
         # If "Yes": Take user information
