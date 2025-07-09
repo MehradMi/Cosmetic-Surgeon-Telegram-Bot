@@ -376,7 +376,7 @@ async def send_images_side_by_side(update: Update, context: ContextTypes.DEFAULT
         await context.bot.send_photo(
             chat_id=update.effective_chat.id,
             photo=open(combined_path, "rb"),
-            caption=f"👥 چهره شما vs سلبریتی منتخب \n {caption_reasons}"
+            caption=f"👥 چهره شما vs {celebrity_name_or_file_id} \n {caption_reasons}"
         )
         # ----------------------------
 
