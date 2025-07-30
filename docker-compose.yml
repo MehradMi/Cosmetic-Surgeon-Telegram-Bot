@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  bot:
+    build: .
+    command: python Bot_Integrated/main.py
+    env_file: .env
+    volumes:
+      - ./users.db:/app/users.db
+      - ./assets:/app/assets
+    restart: always
+
+  dashboard:
+    build: .
+    command: python secure_dashboard.py
+    env_file: .env
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./users.db:/app/users.db
+      - ./assets:/app/assets
+    restart: always
