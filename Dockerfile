@@ -4,10 +4,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install system dependencies (SQLite, etc.)
-#RUN apt-get update && apt-get install -y sqlite3 && rm -rf /var/lib/apt/lists/*
-# Install system dependencies with DNF
-RUN dnf -y install sqlite cronie && \
-    dnf clean all
+RUN apt-get update && apt-get install -y sqlite3 && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install
 COPY requirements.txt .
