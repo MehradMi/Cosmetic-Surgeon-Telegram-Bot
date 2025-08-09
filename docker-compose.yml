@@ -1,9 +1,9 @@
 version: "3.9"
 
 services:
-  bot:
+  cosmetic-surgeon-telegram-bot:
     build: .
-    command: python Bot_Integrated/main.py
+    command: python Bot_Integrated/new_main.py
     env_file: .env
     volumes:
       - ./users.db:/app/users.db
