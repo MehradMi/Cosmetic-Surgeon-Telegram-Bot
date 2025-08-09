@@ -17,25 +17,32 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy ALL application files
 COPY . .
 
-# Create necessary directories with proper permissions
+# Create necessary directories and set proper permissions
 RUN mkdir -p /app/static/pictures \
     /app/static/target_person_pictures \
     /app/static/comparison_pictures \
     /app/assets \
     /app/logs \
     /app/templates \
-    && chmod -R 755 /app/static \
-    && chmod -R 755 /app/logs
+    /app/data/static/pictures \
+    /app/data/static/target_person_pictures \
+    /app/data/static/comparison_pictures \
+    /app/data/logs
 
-# Create a non-root user
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
-USER appuser
+# Set permissions - THIS IS THE KEY FIX
+RUN chmod -R 777 /app/static \
+    && chmod -R 777 /app/logs \
+    && chmod -R 777 /app/data \
+    && chmod +x /app/*.py
+
+# Don't create non-root user - run as root to avoid permission issues
+# USER appuser
 
 # Expose port for dashboard
 EXPOSE 5000
 
-# Default command (can be overridden in docker-compose)
+# Default command
 CMD ["python", "new_main.py"]

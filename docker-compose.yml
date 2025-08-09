@@ -6,37 +6,31 @@ services:
       dockerfile: Dockerfile
     container_name: cosmetic_bot
     environment:
-      # Bot configuration
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      
-      # Flask configuration (not used by bot but prevents errors)
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-fallback_secret_key_for_bot}
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
       - FLASK_DEBUG=${FLASK_DEBUG:-false}
     volumes:
-      # Mount the entire project directory to ensure all files are available
-      - .:/app
-      # Mount data directories to persist images and database
-      - ./data/static:/app/static
-      - ./data/logs:/app/logs
+      # Mount the actual files and directories
+      - ./:/app/source:ro
+      - ./data:/app/data
+      - ./static:/app/static
+      - ./logs:/app/logs
     working_dir: /app
-    command: python new_main.py
-    depends_on:
-      - dashboard
+    command: python source/new_main.py
     restart: unless-stopped
     networks:
       - bot-network
 
-  # Dashboard Service
+  # Dashboard Service  
   dashboard:
     build: 
       context: .
       dockerfile: Dockerfile
     container_name: cosmetic_dashboard
     environment:
-      # Flask configuration
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-please_set_this_in_env_file}
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-please_change_this}
@@ -46,13 +40,14 @@ services:
     ports:
       - "${DASHBOARD_PORT:-5000}:5000"
     volumes:
-      # Mount the entire project directory
-      - .:/app
-      # Share the same data directories as the bot
-      - ./data/static:/app/static
-      - ./data/logs:/app/logs
+      # Mount the actual files and directories  
+      - ./:/app/source:ro
+      - ./data:/app/data
+      - ./static:/app/static
+      - ./templates:/app/templates
+      - ./logs:/app/logs
     working_dir: /app
-    command: python secure_dashboard.py
+    command: python source/secure_dashboard.py
     restart: unless-stopped
     networks:
       - bot-network
@@ -60,7 +55,3 @@ services:
 networks:
   bot-network:
     driver: bridge
-
-volumes:
-  bot_data:
-    driver: local
