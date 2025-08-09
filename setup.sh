@@ -38,7 +38,7 @@ if ! command -v docker &> /dev/null; then
 fi
 
 # Check if Docker Compose is installed
-if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
+if ! command -v docker compose &> /dev/null && ! docker compose version &> /dev/null; then
     print_error "Docker Compose is not installed. Please install Docker Compose first."
     exit 1
 fi
@@ -145,44 +145,44 @@ case "${1:-menu}" in
         ;;
     "build")
         print_status "Building Docker images..."
-        docker-compose build
+        docker compose build
         print_success "Images built successfully!"
         ;;
     "start")
         validate_env || exit 1
         print_status "Starting all services..."
-        docker-compose up -d
+        docker compose up -d
         print_success "Services started!"
         print_status "Dashboard available at: http://localhost:${DASHBOARD_PORT:-5000}"
         ;;
     "bot")
         validate_env || exit 1
         print_status "Starting only the bot..."
-        docker-compose up -d telegram-bot
+        docker compose up -d telegram-bot
         print_success "Bot started!"
         ;;
     "dashboard")
         validate_env || exit 1
         print_status "Starting only the dashboard..."
-        docker-compose up -d dashboard
+        docker compose up -d dashboard
         print_success "Dashboard started!"
         print_status "Dashboard available at: http://localhost:${DASHBOARD_PORT:-5000}"
         ;;
     "stop")
         print_status "Stopping all services..."
-        docker-compose down
+        docker compose down
         print_success "Services stopped!"
         ;;
     "logs")
         print_status "Showing logs... (Press Ctrl+C to exit)"
-        docker-compose logs -f
+        docker compose logs -f
         ;;
     "clean")
         print_warning "This will remove all containers and images. Continue? (y/N)"
         read -r response
         if [[ "$response" =~ ^[Yy]$ ]]; then
             print_status "Cleaning up..."
-            docker-compose down --rmi all --volumes
+            docker compose down --rmi all --volumes
             print_success "Cleanup completed!"
         else
             print_status "Cleanup cancelled."
@@ -193,7 +193,7 @@ case "${1:-menu}" in
         read -r response
         if [[ "$response" =~ ^[Yy]$ ]]; then
             print_status "Resetting data..."
-            docker-compose down
+            docker compose down
             sudo rm -rf data/
             mkdir -p data/database data/static/pictures data/static/target_person_pictures data/static/comparison_pictures data/logs
             print_success "Data reset completed!"
@@ -210,44 +210,44 @@ case "${1:-menu}" in
                 1) validate_env ;;
                 2) 
                     print_status "Building Docker images..."
-                    docker-compose build
+                    docker compose build
                     print_success "Images built successfully!"
                     ;;
                 3)
                     validate_env || continue
                     print_status "Starting all services..."
-                    docker-compose up -d
+                    docker compose up -d
                     print_success "Services started!"
                     print_status "Dashboard available at: http://localhost:${DASHBOARD_PORT:-5000}"
                     ;;
                 4)
                     validate_env || continue
                     print_status "Starting only the bot..."
-                    docker-compose up -d telegram-bot
+                    docker compose up -d telegram-bot
                     print_success "Bot started!"
                     ;;
                 5)
                     validate_env || continue
                     print_status "Starting only the dashboard..."
-                    docker-compose up -d dashboard
+                    docker compose up -d dashboard
                     print_success "Dashboard started!"
                     print_status "Dashboard available at: http://localhost:${DASHBOARD_PORT:-5000}"
                     ;;
                 6)
                     print_status "Stopping all services..."
-                    docker-compose down
+                    docker compose down
                     print_success "Services stopped!"
                     ;;
                 7)
                     print_status "Showing logs... (Press Ctrl+C to exit)"
-                    docker-compose logs -f
+                    docker compose logs -f
                     ;;
                 8)
                     print_warning "This will remove all containers and images. Continue? (y/N)"
                     read -r response
                     if [[ "$response" =~ ^[Yy]$ ]]; then
                         print_status "Cleaning up..."
-                        docker-compose down --rmi all --volumes
+                        docker compose down --rmi all --volumes
                         print_success "Cleanup completed!"
                     else
                         print_status "Cleanup cancelled."
@@ -258,7 +258,7 @@ case "${1:-menu}" in
                     read -r response
                     if [[ "$response" =~ ^[Yy]$ ]]; then
                         print_status "Resetting data..."
-                        docker-compose down
+                        docker compose down
                         sudo rm -rf data/
                         mkdir -p data/database data/static/pictures data/static/target_person_pictures data/static/comparison_pictures data/logs
                         print_success "Data reset completed!"
