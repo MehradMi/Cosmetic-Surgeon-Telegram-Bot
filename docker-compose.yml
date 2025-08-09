@@ -1,9 +1,9 @@
-version: '3.8'
-
 services:
   # Telegram Bot Service
   telegram-bot:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     container_name: cosmetic_bot
     environment:
       # Bot configuration
@@ -11,16 +11,18 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       
       # Flask configuration (not used by bot but prevents errors)
-      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-fallback_secret_key}
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-fallback_secret_key_for_bot}
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
       - FLASK_DEBUG=${FLASK_DEBUG:-false}
     volumes:
+      # Mount the entire project directory to ensure all files are available
+      - .:/app
       # Mount data directories to persist images and database
-      - ./data/database:/app
       - ./data/static:/app/static
       - ./data/logs:/app/logs
-      - ./assets:/app/assets:ro  # Read-only mount for assets
+    working_dir: /app
+    command: python new_main.py
     depends_on:
       - dashboard
     restart: unless-stopped
@@ -29,25 +31,28 @@ services:
 
   # Dashboard Service
   dashboard:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     container_name: cosmetic_dashboard
-    command: python secure_dashboard.py
     environment:
       # Flask configuration
-      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
-      - ADMIN_USERNAME=${ADMIN_USERNAME}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-please_set_this_in_env_file}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-please_change_this}
       - FLASK_DEBUG=${FLASK_DEBUG:-false}
       - FLASK_HOST=0.0.0.0
       - FLASK_PORT=5000
     ports:
       - "${DASHBOARD_PORT:-5000}:5000"
     volumes:
+      # Mount the entire project directory
+      - .:/app
       # Share the same data directories as the bot
-      - ./data/database:/app
       - ./data/static:/app/static
       - ./data/logs:/app/logs
-      - ./templates:/app/templates:ro
+    working_dir: /app
+    command: python secure_dashboard.py
     restart: unless-stopped
     networks:
       - bot-network
