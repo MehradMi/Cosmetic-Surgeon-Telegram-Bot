@@ -2,7 +2,7 @@ import os
 import sqlite3
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "/app/users.db")
+DB_PATH = os.path.join(BASE_DIR, "users.db")
 
 def init_db():
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
