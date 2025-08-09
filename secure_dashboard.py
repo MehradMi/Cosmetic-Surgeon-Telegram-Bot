@@ -34,11 +34,11 @@ def setup_logging():
     """Setup logging for production environment"""
     if not app.debug:
         # Create logs directory if it doesn't exist
-        if not os.path.exists('logs'):
-            os.makedirs('logs')
+        if not os.path.exists('/app/logs'):
+            os.makedirs('/app/logs', mode=0o777)
         
         # Setup file handler with rotation
-        file_handler = RotatingFileHandler('logs/app.log', maxBytes=10240000, backupCount=10)
+        file_handler = RotatingFileHandler('/app/logs/app.log', maxBytes=10240000, backupCount=10)
         file_handler.setFormatter(logging.Formatter(
             '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
         ))
@@ -102,7 +102,7 @@ def login_required(f):
 # Function for making a connection to our users.db database (returns the initiated connection)
 def get_db_connection():
     try:
-        conn = sqlite3.connect('users.db')
+        conn = sqlite3.connect('/app/users.db', check_same_thread=False)
         conn.row_factory = sqlite3.Row
         return conn
     except Exception as e:
