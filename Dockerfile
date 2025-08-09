@@ -1,20 +1,41 @@
+# Use Python 3.11 slim image
 FROM python:3.11-slim
 
-# Set work directory
+# Set working directory
 WORKDIR /app
 
-# Install system dependencies (SQLite, etc.)
-RUN apt-get update && apt-get install -y sqlite3 && rm -rf /var/lib/apt/lists/*
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install
+# Copy requirements first for better caching
 COPY requirements.txt .
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project files
+# Copy application code
 COPY . .
 
-# Environment variables
-ENV PYTHONUNBUFFERED=1
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/static/pictures \
+    /app/static/target_person_pictures \
+    /app/static/comparison_pictures \
+    /app/assets \
+    /app/logs \
+    /app/templates \
+    && chmod -R 755 /app/static \
+    && chmod -R 755 /app/logs
 
-# Default command (overridden in docker-compose)
-CMD ["python", "secure_dashboard.py"]
+# Create a non-root user
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+# Expose port for dashboard
+EXPOSE 5000
+
+# Default command (can be overridden in docker-compose)
+CMD ["python", "new_main.py"]

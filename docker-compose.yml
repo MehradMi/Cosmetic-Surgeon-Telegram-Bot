@@ -1,22 +1,61 @@
-version: "3.9"
+version: '3.8'
 
 services:
-  cosmetic-surgeon-telegram-bot:
+  # Telegram Bot Service
+  telegram-bot:
     build: .
-    command: python Bot_Integrated/new_main.py
-    env_file: .env
+    container_name: cosmetic_bot
+    environment:
+      # Bot configuration
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      
+      # Flask configuration (not used by bot but prevents errors)
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-fallback_secret_key}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
+      - FLASK_DEBUG=${FLASK_DEBUG:-false}
     volumes:
-      - ./users.db:/app/users.db
-      - ./assets:/app/assets
-    restart: always
+      # Mount data directories to persist images and database
+      - ./data/database:/app
+      - ./data/static:/app/static
+      - ./data/logs:/app/logs
+      - ./assets:/app/assets:ro  # Read-only mount for assets
+    depends_on:
+      - dashboard
+    restart: unless-stopped
+    networks:
+      - bot-network
 
+  # Dashboard Service
   dashboard:
     build: .
+    container_name: cosmetic_dashboard
     command: python secure_dashboard.py
-    env_file: .env
+    environment:
+      # Flask configuration
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - FLASK_DEBUG=${FLASK_DEBUG:-false}
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=5000
     ports:
-      - "5000:5000"
+      - "${DASHBOARD_PORT:-5000}:5000"
     volumes:
-      - ./users.db:/app/users.db
-      - ./assets:/app/assets
-    restart: always
+      # Share the same data directories as the bot
+      - ./data/database:/app
+      - ./data/static:/app/static
+      - ./data/logs:/app/logs
+      - ./templates:/app/templates:ro
+    restart: unless-stopped
+    networks:
+      - bot-network
+
+networks:
+  bot-network:
+    driver: bridge
+
+volumes:
+  bot_data:
+    driver: local
